@@ -97,7 +97,7 @@ await cdp("Page.navigate", { url: PAGE });
 let echecs = 0;
 const verifier = (nom, ok, detail) => {
   if (!ok) echecs++;
-  console.log("  %s %s%s", ok ? "ok   " : "ÉCHEC", nom.padEnd(42),
+  console.log("  %s %s%s", ok ? "ok   " : "ÉCHEC", nom.padEnd(46),
     detail === undefined ? "" : detail);
 };
 
@@ -215,6 +215,32 @@ verifier("model-viewer accepte le tableau", !!pose && !pose.__erreur,
 verifier("le tableau fait la taille demandée",
   !!pose && pose.l === 60 && pose.h === 45 && pose.p === 2,
   pose ? `${pose.l} × ${pose.h} × ${pose.p}` : "");
+
+/* Ni iPhone ni Android ne sont atteignables d'ici, mais la règle qui décide
+   du bouton l'est. Les trois plateformes tiennent en une table de vérité. */
+const table = await evaluer(`(() => {
+  const s = globalThis.__situation;
+  if (!s) return { __erreur: "situation() non exposée" };
+  return {
+    ordinateur:      s(false, false, false),
+    ordinateurBlob:  s(false, true,  false),
+    iphoneRayon:     s(true,  false, true),
+    iphoneBlob:      s(true,  true,  true),
+    androidRayon:    s(true,  false, false),
+    androidBlob:     s(true,  true,  false)
+  };
+})()`);
+const attenduTable = {
+  ordinateur: "ordinateur", ordinateurBlob: "ordinateur",
+  iphoneRayon: "pret", iphoneBlob: "pret",
+  androidRayon: "pret", androidBlob: "android"
+};
+const faux = Object.entries(attenduTable)
+  .filter(([k, v]) => table?.[k] !== v)
+  .map(([k, v]) => `${k}: ${table?.[k]} au lieu de ${v}`);
+verifier("la règle du bouton AR couvre les 3 plateformes",
+  !table?.__erreur && faux.length === 0,
+  table?.__erreur || faux.join(", ") || "6 cas");
 
 const bruit = journal.filter((l) => !/favicon/i.test(l));
 verifier("console propre", bruit.length === 0);

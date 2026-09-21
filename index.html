@@ -158,8 +158,9 @@
   <input type="file" id="fichier" accept=".glb,.gltf,model/gltf-binary" hidden>
   <input type="file" id="photo" accept="image/*" hidden>
 
+  <!-- Contenu de repli : annoncer() le réécrit selon ce qui bloque. -->
   <p class="depuis" id="depuis" hidden>
-    Ouvre cette page <b>sur ton iPhone</b> pour poser l'objet dans la pièce.
+    Ouvre cette page <b>sur ton téléphone</b> pour poser l'objet dans la pièce.
     Ici, tu peux seulement le tourner.
   </p>
 
@@ -170,9 +171,14 @@
     <p><b>La taille est verrouillée.</b> C'est tout l'intérêt&nbsp;: un meuble a
       une taille réelle, on ne la change pas pour se rassurer. Corrige-la dans
       le champ ci-dessus si le modèle 3D ment sur ses dimensions.</p>
-    <p><b>Un objet à la fois.</b> iOS ouvre son propre visualiseur, qui n'en
-      affiche qu'un. Pour meubler une pièce entière, il faut y aller morceau
-      par morceau.</p>
+    <p><b>Un objet à la fois.</b> iPhone et Android ouvrent chacun leur propre
+      visualiseur, et aucun n'en affiche plus d'un. Pour meubler une pièce
+      entière, il faut y aller morceau par morceau.</p>
+    <p><b>Sur Android, le rayon seulement.</b> Ton propre fichier et ton
+      tableau ne peuvent pas y être pos&eacute;s&nbsp;: la r&eacute;alit&eacute; augment&eacute;e s'y
+      fait dans une application s&eacute;par&eacute;e, qui ne voit pas les fichiers de
+      cette page. Le mur, en revanche, y est une vraie consigne, alors
+      qu'iOS d&eacute;cide seul.</p>
     <p>Rien n'est envoyé nulle part. Ton fichier et ta photo sont lus dans le
       navigateur et n'en sortent pas.</p>
     <p id="credits">Modèles du rayon&nbsp;: <b>Eric Chadwick</b> (Wayfair,
@@ -221,6 +227,20 @@ let urlLocale = null;     // blob à révoquer quand on change d'objet
 let choisi = "SheenChair";
 
 const cm = (m) => Math.round(m * 100);
+
+/* iOS ouvre la réalité augmentée dans l'onglet lui-même, via un lien
+   rel="ar" : le fichier peut donc être un blob, qui n'existe que dans cette
+   page. Android passe par Scene Viewer, une application séparée à qui l'URL
+   du modèle est transmise dans une intention. Un blob n'y survit pas.
+   Conséquence : sur Android, le rayon fonctionne, mais un fichier ouvert
+   depuis l'appareil ou un tableau fabriqué ici ne peut pas être posé.
+   C'est le même test que model-viewer utilise pour choisir sa route. */
+const QUICK_LOOK = (() => {
+  try {
+    const a = document.createElement("a");
+    return !!(a.relList && a.relList.supports && a.relList.supports("ar"));
+  } catch { return false; }
+})();
 
 /* ---------------------------------------------------------------- le rayon */
 const rayon = document.getElementById("rayon");
@@ -326,10 +346,46 @@ vue.addEventListener("load", async () => {
   natif = await vue.getDimensions();
   largeur.value = cm(natif.x);
   afficher(1);
-  const possible = vue.canActivateAR;
-  document.getElementById("ar").hidden = !possible;
-  document.getElementById("depuis").hidden = possible;
+  annoncer();
 });
+
+/* Décision isolée du DOM pour être vérifiable : ni iPhone ni Android ne sont
+   atteignables depuis un banc headless, alors qu'une table de vérité l'est. */
+export function situation(arPossible, local, quickLook) {
+  if (!arPossible) return "ordinateur";
+  // Un blob sur Android : le bouton s'ouvrirait sur une application incapable
+  // de lire le fichier. Mieux vaut ne pas le proposer que le voir échouer.
+  if (local && !quickLook) return "android";
+  return "pret";
+}
+globalThis.__situation = situation;   // point d'entrée du banc
+
+/** Montre le bouton, ou dit pourquoi il n'y sera pas. */
+function annoncer() {
+  const note = document.getElementById("depuis");
+  const cas = situation(vue.canActivateAR, !!urlLocale, QUICK_LOOK);
+  const possible = cas === "pret";
+
+  document.getElementById("ar").hidden = !possible;
+  note.hidden = possible;
+  if (possible) return;
+
+  note.textContent = "";
+  if (cas === "android") {
+    note.append("Sur Android, un fichier ouvert depuis ton appareil ne peut " +
+      "pas être posé : la réalité augmentée s'y fait dans une autre " +
+      "application, qui n'a pas accès aux fichiers de cette page. ");
+    const b = document.createElement("b");
+    b.textContent = "Les objets du rayon fonctionnent.";
+    note.append(b);
+  } else {
+    note.append("Ouvre cette page ");
+    const b = document.createElement("b");
+    b.textContent = "sur ton téléphone";
+    note.append(b, " pour poser l'objet dans la pièce. Ici, tu peux " +
+      "seulement le tourner.");
+  }
+}
 
 vue.addEventListener("error", (e) => {
   natif = null;
