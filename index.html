@@ -27,7 +27,7 @@
   h1{margin:0;font-size:29px;letter-spacing:-.025em}
   .sous{margin:6px 0 20px;color:var(--gris);font-size:15px}
 
-  /* — la scène — */
+  /* la scène */
   .scene{position:relative}
   model-viewer{width:100%;height:56vh;min-height:300px;max-height:440px;
     background:var(--scene);border-radius:16px;display:block;
@@ -44,7 +44,7 @@
     font-size:14px;text-align:center;padding:20px;backdrop-filter:blur(2px)}
   .voile.vu{display:grid}
 
-  /* — le rayon — */
+  /* le rayon */
   h2{margin:26px 0 10px;font-size:12px;letter-spacing:.09em;
     text-transform:uppercase;color:var(--gris);font-weight:600}
   .rayon{display:grid;grid-auto-flow:column;grid-auto-columns:96px;gap:10px;
@@ -66,7 +66,7 @@
   .objet.acte b{font-size:20px;font-weight:400;color:var(--accent);line-height:1}
   .objet.acte span{padding:0}
 
-  /* — réglages — */
+  /* réglages */
   .carte{margin-top:14px;padding:4px 14px;border:1px solid var(--trait);
     border-radius:12px;background:var(--carte)}
   .ligne{display:flex;align-items:center;gap:12px;padding:11px 0;min-height:48px}
@@ -186,7 +186,7 @@
      changer « scale » hors session AR lève une exception dans model-viewer même
      (arRenderer.onUpdateScene fait presentedScene.add sur un presentedScene nul).
      Comme on redimensionne à chaque frappe, ça ferait une exception par touche.
-     4.1.0 est la dernière version saine — vérifié par node verifier.mjs sur
+     4.1.0 est la dernière version saine, vérifié par node verifier.mjs sur
      3.5.0, 4.0.0, 4.1.0, 4.2.0 et 4.3.1. Ne remonte pas sans relancer le banc. -->
 <script type="module"
   src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.1.0/dist/model-viewer.min.js"></script>
@@ -207,7 +207,7 @@ const vignette = (n) => `vignettes/${n}.png`;
 
 /* Rayon trié du plus grand au plus petit : on commence par se demander si le
    canapé rentre, rarement si le vase rentre. Les dimensions indiquées ont été
-   mesurées, pas recopiées — ces modèles viennent de Wayfair et sont métriques. */
+   mesurées, pas recopiées : ces modèles viennent de Wayfair et sont métriques. */
 const RAYON = [
   { id: "GlamVelvetSofa", nom: "Canapé", cm: 219 },
   { id: "SheenChair", nom: "Chaise", cm: 83, local: "modeles/chaise.glb" },

@@ -9,7 +9,7 @@ Une page. Aucun build, aucun serveur, aucun compte.
 
 Safari iOS ne supporte pas WebXR : aucune page web ne peut ouvrir une vue AR
 sur iPhone. La seule route est **AR Quick Look**, le visualiseur natif d'iOS.
-On lui sert un fichier USDZ et il fait le reste — détection du sol, tap pour
+On lui sert un fichier USDZ et il fait le reste : détection du sol, tap pour
 poser, glisser pour déplacer, deux doigts pour pivoter, et l'ancrage qui tient
 quand la caméra regarde ailleurs.
 
@@ -18,18 +18,18 @@ chargé. Pas de conversion côté serveur, donc pas de serveur.
 
 ## Ce qu'on peut poser
 
-- **Le rayon** — cinq objets des glTF Sample Assets de Khronos : canapé, chaise,
+- **Le rayon**, cinq objets des glTF Sample Assets de Khronos : canapé, chaise,
   plante, lampe, vase. Choisis pour couvrir toutes les échelles, du meuble de
   2,19 m à l'objet de bureau de 22 cm.
-- **Ton propre `.glb`** — lu dans le navigateur, jamais envoyé.
-- **Ta photo, en tableau** — voir plus bas.
+- **Ton propre `.glb`**, lu dans le navigateur, jamais envoyé.
+- **Ta photo, en tableau**. Voir plus bas.
 
 ## Le champ « largeur réelle »
 
 C'est la première idée de l'outil. Un GLB trouvé sur le web ment une fois sur
 deux sur ses dimensions : le glTF est censé être en mètres, beaucoup d'exports
 sont en centimètres, et le canapé arrive 100× trop grand. Le champ rattrape ça
-en une frappe, et le facteur est inscrit dans le `xformOp:transform` du USDZ —
+en une frappe, et le facteur est inscrit dans le `xformOp:transform` du USDZ, et
 Quick Look pose donc le meuble à sa taille métrique corrigée.
 
 La taille est verrouillée en AR (`ar-scale="fixed"`). Un meuble a une taille
@@ -37,7 +37,7 @@ réelle ; pouvoir la changer du bout des doigts viderait l'outil de son sens.
 
 ## Le tableau fabriqué à partir d'une photo
 
-Aucune bibliothèque 3D libre ne propose de cadre accroché au mur — et de toute
+Aucune bibliothèque 3D libre ne propose de cadre accroché au mur, et de toute
 façon un tableau n'a d'intérêt que si c'est le tien. [`tableau.js`](tableau.js)
 assemble donc un GLB à la main : une boîte de 2 cm d'épaisseur, la photo sur la
 face avant, un matériau sombre sur les cinq autres. La hauteur découle du
@@ -52,7 +52,7 @@ les 12 mégapixels qui feraient un USDZ de 40 Mo, et l'orientation EXIF.
 Le sélecteur bascule `ar-placement` entre `floor` et `wall`. Attention à ce que
 ça veut dire : **Quick Look ne reçoit aucune consigne de mur.** model-viewer
 n'ajoute au lien iOS que `allowsContentScaling=0`, et `ar-placement` ne change
-que l'aperçu — l'ombre est projetée vers l'arrière au lieu du dessous. La
+que l'aperçu : l'ombre est projetée vers l'arrière au lieu du dessous. La
 détection de surface verticale appartient entièrement à Quick Look.
 
 ## Limites, honnêtement
@@ -60,10 +60,10 @@ détection de surface verticale appartient entièrement à Quick Look.
 - **Un objet à la fois.** Quick Look n'en affiche qu'un. Pour meubler une pièce
   entière, il faut y aller morceau par morceau.
 - **Rien n'est sauvegardé.** Aucune disposition n'est mémorisée d'une session à
-  l'autre — ça demanderait ARKit, donc une vraie app.
+  l'autre. Ça demanderait ARKit, donc une vraie app.
 - **Pas d'occlusion sans LiDAR.** Sur un iPhone non-Pro, l'objet se dessine
   par-dessus le mur qui devrait le cacher.
-- **Les modèles sont lourds** — 1,7 à 5,5 Mo, et le USDZ pèse environ le double.
+- **Les modèles sont lourds**, 1,7 à 5,5 Mo, et le USDZ pèse environ le double.
   Comptez quelques secondes entre le tap et la caméra.
 
 ## Développement

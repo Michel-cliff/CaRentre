@@ -3,7 +3,7 @@
  * Pourquoi fabriquer le fichier à la main plutôt que d'en télécharger un :
  * aucune bibliothèque 3D libre ne propose de cadre accroché au mur, et de
  * toute façon un tableau n'a d'intérêt que si c'est le tien. Un GLB est un
- * en-tête, un bloc JSON et un bloc binaire — c'est assemblable en une page.
+ * en-tête, un bloc JSON et un bloc binaire, c'est assemblable en une page.
  *
  * La géométrie est une boîte de 2 cm d'épaisseur : la photo sur la face avant,
  * un matériau sombre sur les cinq autres. Deux primitives partageant les mêmes
@@ -11,7 +11,7 @@
  */
 
 const EPAISSEUR = 0.02;   // mètres
-const COTE_MAX = 2048;    // px — au-delà, le USDZ devient inutilisable sur mobile
+const COTE_MAX = 2048;    // px. Au-delà, le USDZ devient inutilisable sur mobile
 
 /** Ré-encode la photo en JPEG borné.
  *

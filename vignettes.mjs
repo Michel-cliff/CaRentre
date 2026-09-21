@@ -6,7 +6,7 @@
  * Les captures officielles de Khronos existent, mais elles sont cadrées pour
  * une fiche technique : recadrées en 4:3 dans une vignette de 96 px, le canapé
  * devient une bande bleue indéchiffrable. On rend donc chaque objet soi-même,
- * au même cadrage et sur le même fond que la page — et on cesse au passage de
+ * au même cadrage et sur le même fond que la page, et on cesse au passage de
  * dépendre de GitHub pour afficher le rayon.
  */
 import { spawn } from "node:child_process";

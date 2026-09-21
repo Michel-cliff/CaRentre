@@ -6,7 +6,7 @@
  *   node verifier.mjs
  *   URL_PAGE=https://carentre.vercel.app/ node verifier.mjs
  *
- * L'AR elle-même ne se teste pas ici — Quick Look est un visualiseur iOS.
+ * L'AR elle-même ne se teste pas ici : Quick Look est un visualiseur iOS.
  */
 import { spawn } from "node:child_process";
 import { existsSync, readdirSync, mkdtempSync, rmSync } from "node:fs";
@@ -128,7 +128,7 @@ verifier("le modèle par défaut se charge", !!depart && !depart.__erreur,
 verifier("le champ reprend la largeur du fichier",
   !!depart && depart.champ === depart.l, depart?.champ + " cm");
 
-/* — le rayon — */
+/* le rayon */
 const rayon = await evaluer(`({
   objets: document.querySelectorAll("#rayon .objet[data-id]").length,
   actes: document.querySelectorAll("#rayon .objet.acte").length,
@@ -138,7 +138,8 @@ verifier("le rayon est garni", rayon.objets === 5 && rayon.actes === 2,
   `${rayon.objets} objets + ${rayon.actes} actions`);
 verifier("l'objet courant est marqué", rayon.actif === "SheenChair", rayon.actif);
 
-/* Les vignettes viennent de GitHub : si le CORS ou l'URL cassent, on le voit. */
+/* Les vignettes sont servies d'ici, mais elles sont générées par un script à
+   part : une régénération ratée ou un fichier oublié se verrait ici. */
 await dodo(3000);
 const vignettes = await evaluer(`[...document.querySelectorAll("#rayon img")]
   .filter(i => i.complete && i.naturalWidth > 0).length`);
@@ -152,7 +153,7 @@ verifier("le rayon charge un autre objet", !!canape && canape.l === 219,
   canape ? `${canape.l} × ${canape.p} × ${canape.h} cm` : "échec");
 verifier("le champ suit le nouvel objet", canape?.champ === 219, canape?.champ + " cm");
 
-/* — largeur réelle — */
+/* largeur réelle */
 const mise = await evaluer(`(() => {
   const l = document.getElementById("largeur");
   l.value = 180; l.dispatchEvent(new Event("input"));
@@ -173,7 +174,7 @@ const deuxfois = await evaluer(`(() => {
 verifier("deux réglages ne se cumulent pas",
   Math.abs(Number(String(deuxfois).split(" ")[0]) - facteur) < 1e-9);
 
-/* — sol ou mur — */
+/* sol ou mur */
 const mur = await evaluer(`(() => {
   document.getElementById("pose-mur").click();
   return { pose: document.getElementById("vue").getAttribute("ar-placement"),
@@ -186,7 +187,7 @@ verifier("le mode mur reformule les mesures", /sur le mur/.test(mur.texte || "")
   mur.texte);
 await evaluer(`document.getElementById("pose-sol").click()`);
 
-/* — le tableau fabriqué à la main — */
+/* le tableau fabriqué à la main */
 const tableau = await evaluer(`(async () => {
   const { construireTableau } = await import("./tableau.js");
   // une photo synthétique en 400 × 300 : le tableau doit en hériter le rapport
@@ -221,6 +222,6 @@ for (const l of bruit) console.log("        " + l);
 
 ws.close();
 console.log(echecs ? `\n${echecs} échec(s)`
-  : "\ntout passe — reste l'AR, qui se juge sur l'iPhone");
+  : "\ntout passe, reste l'AR, qui se juge sur l'iPhone");
 nettoyer();
 process.exitCode = echecs ? 1 : 0;
