@@ -3,6 +3,8 @@
 Pose un meuble en 3D dans ta pièce, à sa taille réelle, depuis ton iPhone.
 Une page. Aucun build, aucun serveur, aucun compte.
 
+**https://carentre.vercel.app**
+
 ## Le principe
 
 Safari iOS ne supporte pas WebXR : aucune page web ne peut ouvrir une vue AR
@@ -14,36 +16,75 @@ quand la caméra regarde ailleurs.
 Le USDZ est fabriqué **dans le navigateur** par `model-viewer`, à partir du GLB
 chargé. Pas de conversion côté serveur, donc pas de serveur.
 
+## Ce qu'on peut poser
+
+- **Le rayon** — cinq objets des glTF Sample Assets de Khronos : canapé, chaise,
+  plante, lampe, vase. Choisis pour couvrir toutes les échelles, du meuble de
+  2,19 m à l'objet de bureau de 22 cm.
+- **Ton propre `.glb`** — lu dans le navigateur, jamais envoyé.
+- **Ta photo, en tableau** — voir plus bas.
+
 ## Le champ « largeur réelle »
 
-C'est la seule vraie idée de l'outil. Un GLB trouvé sur le web ment une fois
-sur deux sur ses dimensions : le glTF est censé être en mètres, beaucoup
-d'exports sont en centimètres, et le canapé arrive 100× trop grand. Le champ
-rattrape ça en une frappe, et le facteur est inscrit dans le `xformOp:transform`
-du USDZ — Quick Look pose donc le meuble à sa taille métrique corrigée.
+C'est la première idée de l'outil. Un GLB trouvé sur le web ment une fois sur
+deux sur ses dimensions : le glTF est censé être en mètres, beaucoup d'exports
+sont en centimètres, et le canapé arrive 100× trop grand. Le champ rattrape ça
+en une frappe, et le facteur est inscrit dans le `xformOp:transform` du USDZ —
+Quick Look pose donc le meuble à sa taille métrique corrigée.
 
 La taille est verrouillée en AR (`ar-scale="fixed"`). Un meuble a une taille
 réelle ; pouvoir la changer du bout des doigts viderait l'outil de son sens.
 
+## Le tableau fabriqué à partir d'une photo
+
+Aucune bibliothèque 3D libre ne propose de cadre accroché au mur — et de toute
+façon un tableau n'a d'intérêt que si c'est le tien. [`tableau.js`](tableau.js)
+assemble donc un GLB à la main : une boîte de 2 cm d'épaisseur, la photo sur la
+face avant, un matériau sombre sur les cinq autres. La hauteur découle du
+rapport de l'image, parce qu'une toile ne se déforme pas.
+
+La photo est ré-encodée en JPEG borné à 2048 px avant d'entrer dans le fichier.
+Ça règle trois choses d'un coup : le HEIC de l'iPhone que glTF n'accepte pas,
+les 12 mégapixels qui feraient un USDZ de 40 Mo, et l'orientation EXIF.
+
+## Sol et mur
+
+Le sélecteur bascule `ar-placement` entre `floor` et `wall`. Attention à ce que
+ça veut dire : **Quick Look ne reçoit aucune consigne de mur.** model-viewer
+n'ajoute au lien iOS que `allowsContentScaling=0`, et `ar-placement` ne change
+que l'aperçu — l'ombre est projetée vers l'arrière au lieu du dessous. La
+détection de surface verticale appartient entièrement à Quick Look.
+
 ## Limites, honnêtement
 
-- **Un meuble à la fois.** Quick Look n'affiche qu'un objet. Pour meubler une
-  pièce entière, il faut y aller morceau par morceau.
-- **Rien n'est sauvegardé.** Aucune disposition n'est mémorisée d'une session
-  à l'autre — ça demanderait ARKit et donc une vraie app.
-- **Pas d'occlusion sans LiDAR.** Sur un iPhone non-Pro, le meuble se dessine
+- **Un objet à la fois.** Quick Look n'en affiche qu'un. Pour meubler une pièce
+  entière, il faut y aller morceau par morceau.
+- **Rien n'est sauvegardé.** Aucune disposition n'est mémorisée d'une session à
+  l'autre — ça demanderait ARKit, donc une vraie app.
+- **Pas d'occlusion sans LiDAR.** Sur un iPhone non-Pro, l'objet se dessine
   par-dessus le mur qui devrait le cacher.
+- **Les modèles sont lourds** — 1,7 à 5,5 Mo, et le USDZ pèse environ le double.
+  Comptez quelques secondes entre le tap et la caméra.
 
 ## Développement
 
 ```sh
 python -m http.server 8080   # dans ce dossier
 node verifier.mjs            # le banc
+node vignettes.mjs           # régénère les vignettes du rayon
+URL_PAGE=https://carentre.vercel.app/ node verifier.mjs
 ```
 
-`verifier.mjs` charge la page dans un Chrome headless et vérifie le chargement
-du modèle, sa mesure, et le calcul d'échelle. L'AR elle-même ne se teste pas
-ainsi : elle se juge sur l'iPhone.
+`verifier.mjs` charge la page dans un Chrome headless et vérifie dix-sept
+points : le chargement, le rayon et ses vignettes, la mesure des modèles, le
+calcul d'échelle, la bascule sol/mur, et surtout que le GLB fabriqué à la main
+est accepté par model-viewer aux dimensions demandées. L'AR elle-même ne se
+teste pas ainsi : elle se juge sur l'iPhone.
+
+`vignettes.mjs` rend chaque objet du rayon avec `model-viewer.toBlob()`. Les
+captures officielles de Khronos existent, mais elles sont cadrées pour une
+fiche technique : rognées en vignette de 96 px, le canapé devient une bande
+bleue indéchiffrable.
 
 ### model-viewer est figé à 4.1.0
 
@@ -57,5 +98,7 @@ Ne remonte pas la version sans relancer `verifier.mjs`.
 
 ## Crédits
 
-La chaise d'exemple est [Sheen Chair](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/SheenChair)
-des glTF Sample Assets de Khronos, en CC0-1.0.
+Les modèles du rayon sont d'**Eric Chadwick** pour Wayfair et le Darmstadt
+Graphics Group, tirés des [glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets)
+de Khronos. `SheenChair` et `GlassVaseFlowers` sont en CC0 1.0 ; `GlamVelvetSofa`,
+`DiffuseTransmissionPlant` et `IridescenceLamp` en CC BY 4.0.
