@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ça rentre ?</title>
+<meta name="description" content="Pose un meuble en 3D dans ta pièce, à sa taille réelle, depuis ton iPhone.">
+
+<style>
+  :root{
+    --fond:#F4F1EC; --encre:#1C1A17; --gris:#7A736A; --trait:#DDD6CB;
+    --accent:#C2643B; --scene:#16181C;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--fond);color:var(--encre);
+    font:16px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-text-size-adjust:100%}
+  .page{max-width:560px;margin:0 auto;padding:28px 20px 56px}
+
+  h1{margin:0;font-size:30px;letter-spacing:-.025em}
+  .sous{margin:6px 0 24px;color:var(--gris);font-size:15px}
+
+  /* La scène occupe une hauteur fixe : un meuble vu dans une fenêtre qui
+     change de taille à chaque modèle donne une impression de bricolage. */
+  model-viewer{width:100%;height:58vh;min-height:320px;max-height:460px;
+    background:var(--scene);border-radius:14px;display:block;
+    --poster-color:transparent}
+
+  /* — commandes — */
+  .barre{display:flex;gap:10px;margin-top:14px}
+  .btn{flex:1;appearance:none;border:1px solid var(--trait);background:#fff;
+    color:var(--encre);font:inherit;font-size:14px;padding:11px 12px;
+    border-radius:10px;cursor:pointer;text-align:center}
+  .btn:hover{border-color:var(--gris)}
+
+  .champ{display:flex;align-items:center;gap:12px;margin-top:14px;
+    padding:13px 14px;border:1px solid var(--trait);border-radius:10px;
+    background:#fff}
+  .champ label{font-size:14px;color:var(--gris);flex:1}
+  .champ input{width:88px;font:inherit;font-size:15px;text-align:right;
+    border:0;border-bottom:1.5px solid var(--trait);padding:2px 4px;
+    background:transparent;color:var(--encre);
+    font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+  .champ input:focus{outline:0;border-bottom-color:var(--accent)}
+  .champ input::-webkit-outer-spin-button,
+  .champ input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .champ b{font-size:14px;color:var(--gris);font-weight:400}
+
+  .mesures{margin:10px 2px 0;font-size:13px;color:var(--gris);
+    font-variant-numeric:tabular-nums;min-height:19px}
+
+  /* — bouton AR, placé dans la scène — */
+  #ar{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;
+    border:0;border-radius:999px;background:var(--accent);color:#fff;
+    font:inherit;font-weight:600;font-size:15px;padding:13px 26px;
+    cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.28);white-space:nowrap}
+  #ar[hidden]{display:none}
+
+  .depuis{margin:18px 0 0;padding:14px;border:1px dashed var(--trait);
+    border-radius:10px;font-size:13.5px;color:var(--gris);text-align:center}
+  .depuis[hidden]{display:none}
+
+  .zone{outline:2px dashed var(--accent);outline-offset:-6px}
+
+  footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--trait);
+    font-size:13px;line-height:1.6;color:var(--gris)}
+  footer p{margin:0 0 9px}
+  footer b{color:var(--encre);font-weight:600}
+
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --fond:#141311; --encre:#EFEAE2; --gris:#989084; --trait:#2E2A26;
+    }
+    :root:not([data-theme="light"]) .btn,
+    :root:not([data-theme="light"]) .champ{background:#1D1B18}
+  }
+</style>
+</head>
+
+<body>
+<div class="page">
+
+  <h1>Ça rentre ?</h1>
+  <p class="sous">Pose un meuble dans ta pièce, à sa taille réelle,
+    avant de l'acheter.</p>
+
+  <div style="position:relative">
+    <model-viewer id="vue"
+      src="modeles/chaise.glb"
+      alt="Le meuble en 3D"
+      camera-controls
+      touch-action="pan-y"
+      shadow-intensity="1"
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      ar-placement="floor"
+      ar-scale="fixed">
+      <button id="ar" slot="ar-button" hidden>Poser dans ma pièce</button>
+    </model-viewer>
+  </div>
+
+  <div class="barre">
+    <button class="btn" id="choisir">Ouvrir un fichier .glb</button>
+    <button class="btn" id="exemple">Revenir à la chaise</button>
+  </div>
+  <input type="file" id="fichier" accept=".glb,.gltf,model/gltf-binary" hidden>
+
+  <div class="champ">
+    <label for="largeur">Largeur réelle du meuble</label>
+    <input type="number" id="largeur" min="1" max="600" step="1" inputmode="numeric">
+    <b>cm</b>
+  </div>
+  <p class="mesures" id="mesures"></p>
+
+  <p class="depuis" id="depuis" hidden>
+    Ouvre cette page <b>sur ton iPhone</b> pour poser le meuble dans la pièce.
+    Ici, tu peux seulement le tourner.
+  </p>
+
+  <footer>
+    <p><b>Ce que tu peux faire une fois en AR.</b> Un doigt pour glisser le
+      meuble sur le sol, deux doigts pour le pivoter. Il reste à sa place quand
+      tu tournes la caméra ailleurs&nbsp;: reviens dessus, il y est encore.</p>
+    <p><b>La taille est verrouillée.</b> C'est tout l'intérêt&nbsp;: un meuble a
+      une taille réelle, on ne la change pas pour se rassurer. Corrige-la dans
+      le champ ci-dessus si le modèle 3D ment.</p>
+    <p><b>Un meuble à la fois.</b> iOS ouvre son propre visualiseur, qui ne
+      sait afficher qu'un seul objet. Pour meubler toute une pièce, il faut
+      y aller morceau par morceau.</p>
+    <p>Rien n'est envoyé nulle part. Ton fichier .glb est lu dans le
+      navigateur et n'en sort pas.</p>
+  </footer>
+
+</div>
+
+<!-- Version figée à 4.1.0, et ce n'est pas de la frilosité : à partir de 4.2.0,
+     changer « scale » hors session AR lève une exception dans model-viewer même
+     (arRenderer.onUpdateScene fait presentedScene.add sur un presentedScene nul).
+     Comme on redimensionne à chaque frappe, ça ferait une exception par touche.
+     4.1.0 est la dernière version saine — vérifié par node verifier.mjs sur
+     3.5.0, 4.0.0, 4.1.0, 4.2.0 et 4.3.1. Ne remonte pas sans relancer le banc. -->
+<script type="module"
+  src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.1.0/dist/model-viewer.min.js"></script>
+
+<script type="module">
+const vue = document.getElementById("vue");
+const largeur = document.getElementById("largeur");
+const mesures = document.getElementById("mesures");
+const fichier = document.getElementById("fichier");
+
+const EXEMPLE = "modeles/chaise.glb";
+
+/* Dimensions du modèle tel qu'il a été exporté, avant toute mise à l'échelle.
+   On les garde de côté : recalculer le facteur à partir des dimensions déjà
+   redimensionnées le multiplierait à chaque frappe au clavier. */
+let natif = null;
+let urlLocale = null;
+
+const cm = (m) => Math.round(m * 100);
+
+function redimensionner() {
+  if (!natif) return;
+  const voulue = Number(largeur.value);
+  if (!voulue || voulue <= 0) return;
+  const facteur = (voulue / 100) / natif.x;
+  vue.scale = `${facteur} ${facteur} ${facteur}`;
+  afficher(facteur);
+}
+
+function afficher(facteur) {
+  if (!natif) { mesures.textContent = ""; return; }
+  const l = cm(natif.x * facteur), h = cm(natif.y * facteur), p = cm(natif.z * facteur);
+  const brut = facteur === 1 ? "" :
+    `  ·  le fichier annonçait ${cm(natif.x)} cm de large`;
+  mesures.textContent = `${l} × ${p} cm au sol, ${h} cm de haut${brut}`;
+}
+
+vue.addEventListener("load", async () => {
+  vue.scale = "1 1 1";
+  // getDimensions lit la boîte englobante du modèle chargé, en mètres.
+  natif = await vue.getDimensions();
+  largeur.value = cm(natif.x);
+  afficher(1);
+
+  /* canActivateAR ne dit pas si le modèle est bon, mais si l'appareil sait
+     ouvrir une vue AR. Sur un ordinateur, c'est toujours faux — autant le dire
+     au lieu de laisser un bouton mort. */
+  const possible = vue.canActivateAR;
+  document.getElementById("ar").hidden = !possible;
+  document.getElementById("depuis").hidden = possible;
+});
+
+vue.addEventListener("error", (e) => {
+  natif = null;
+  mesures.textContent = "Ce fichier n'a pas pu être lu. Il faut un .glb valide.";
+  console.warn("chargement refusé", e.detail);
+});
+
+largeur.addEventListener("input", redimensionner);
+
+/* — changer de modèle — */
+function charger(url, local) {
+  if (urlLocale) { URL.revokeObjectURL(urlLocale); urlLocale = null; }
+  if (local) urlLocale = url;
+  natif = null;
+  mesures.textContent = "";
+  vue.src = url;
+}
+
+document.getElementById("choisir").addEventListener("click", () => fichier.click());
+document.getElementById("exemple").addEventListener("click", () => charger(EXEMPLE, false));
+
+fichier.addEventListener("change", () => {
+  const f = fichier.files[0];
+  if (f) charger(URL.createObjectURL(f), true);
+});
+
+/* Glisser-déposer, pour l'ordinateur. Le téléphone passe par le sélecteur. */
+for (const nom of ["dragenter", "dragover"]) {
+  document.addEventListener(nom, (e) => {
+    e.preventDefault();
+    document.body.classList.add("zone");
+  });
+}
+for (const nom of ["dragleave", "drop"]) {
+  document.addEventListener(nom, (e) => {
+    e.preventDefault();
+    if (nom === "dragleave" && e.relatedTarget) return;
+    document.body.classList.remove("zone");
+  });
+}
+document.addEventListener("drop", (e) => {
+  const f = e.dataTransfer?.files?.[0];
+  if (f) charger(URL.createObjectURL(f), true);
+});
+</script>
+</body>
+</html>
