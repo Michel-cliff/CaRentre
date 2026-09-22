@@ -221,13 +221,14 @@ verifier("le tableau fait la taille demandée",
 const table = await evaluer(`(() => {
   const s = globalThis.__situation;
   if (!s) return { __erreur: "situation() non exposée" };
+  // 3e argument : la route passe-t-elle par Scene Viewer (Android) ?
   return {
     ordinateur:      s(false, false, false),
     ordinateurBlob:  s(false, true,  false),
-    iphoneRayon:     s(true,  false, true),
-    iphoneBlob:      s(true,  true,  true),
-    androidRayon:    s(true,  false, false),
-    androidBlob:     s(true,  true,  false)
+    iphoneRayon:     s(true,  false, false),
+    iphoneBlob:      s(true,  true,  false),
+    androidRayon:    s(true,  false, true),
+    androidBlob:     s(true,  true,  true)
   };
 })()`);
 const attenduTable = {
@@ -241,6 +242,29 @@ const faux = Object.entries(attenduTable)
 verifier("la règle du bouton AR couvre les 3 plateformes",
   !table?.__erreur && faux.length === 0,
   table?.__erreur || faux.join(", ") || "6 cas");
+
+/* La regle ne vaut que si SCENE_VIEWER reconnait la bonne plateforme. La
+   version precedente cherchait Quick Look et repondait « non » dans Chrome
+   sur iPhone, ce qui cachait le bouton sur un fichier ouvert depuis
+   l'appareil. On usurpe donc de vrais user-agents. */
+const PLATEFORMES = [
+  ["Safari iPhone", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1", false],
+  ["Chrome iPhone", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0 Mobile/15E148 Safari/604.1", false],
+  ["Firefox iPhone", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/127.0 Mobile/15E148 Safari/604.1", false],
+  ["Chrome Android", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36", true],
+  ["Firefox Android", "Mozilla/5.0 (Android 14; Mobile; rv:127.0) Gecko/127.0 Firefox/127.0", false],
+];
+const vus = [];
+for (const [nom, ua, attendu] of PLATEFORMES) {
+  await cdp("Emulation.setUserAgentOverride", { userAgent: ua });
+  await cdp("Page.navigate", { url: PAGE });
+  await dodo(2500);
+  const v = await evaluer("globalThis.__sceneViewer");
+  if (v !== attendu) vus.push(`${nom}: ${v} au lieu de ${attendu}`);
+}
+await cdp("Emulation.setUserAgentOverride", { userAgent: "" });
+verifier("Scene Viewer reconnu sur la bonne plateforme", vus.length === 0,
+  vus.join(", ") || PLATEFORMES.length + " plateformes");
 
 const bruit = journal.filter((l) => !/favicon/i.test(l));
 verifier("console propre", bruit.length === 0);

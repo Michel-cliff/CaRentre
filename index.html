@@ -228,18 +228,23 @@ let choisi = "SheenChair";
 
 const cm = (m) => Math.round(m * 100);
 
-/* iOS ouvre la réalité augmentée dans l'onglet lui-même, via un lien
-   rel="ar" : le fichier peut donc être un blob, qui n'existe que dans cette
-   page. Android passe par Scene Viewer, une application séparée à qui l'URL
-   du modèle est transmise dans une intention. Un blob n'y survit pas.
-   Conséquence : sur Android, le rayon fonctionne, mais un fichier ouvert
-   depuis l'appareil ou un tableau fabriqué ici ne peut pas être posé.
-   C'est le même test que model-viewer utilise pour choisir sa route. */
-const QUICK_LOOK = (() => {
-  try {
-    const a = document.createElement("a");
-    return !!(a.relList && a.relList.supports && a.relList.supports("ar"));
-  } catch { return false; }
+/* Une seule route ne sait pas lire un blob : Scene Viewer, sur Android.
+   C'est une application separee, a qui l'URL du modele est passee dans une
+   intention, et un blob n'existe que dans l'onglet qui l'a cree. iOS, lui,
+   ouvre la realite augmentee dans l'onglet meme, via un lien rel="ar", donc
+   le blob passe.
+
+   On teste donc Android, et non l'absence de Quick Look. La version
+   precedente cherchait relList.supports("ar") : or sur iPhone, dans Chrome,
+   Edge, Firefox, l'application Google ou DuckDuckGo, ce test repond non
+   alors que Quick Look fonctionne quand meme. model-viewer, lui, reconnait
+   ces navigateurs a leur user-agent. Resultat : le bouton disparaissait sur
+   un fichier ouvert depuis l'appareil, sur un telephone parfaitement
+   capable de le poser. */
+const SCENE_VIEWER = (() => {
+  const ua = navigator.userAgent;
+  // Meme condition que model-viewer pour choisir Scene Viewer.
+  return /android/i.test(ua) && !/firefox/i.test(ua) && !/OculusBrowser/.test(ua);
 })();
 
 /* ---------------------------------------------------------------- le rayon */
@@ -351,19 +356,20 @@ vue.addEventListener("load", async () => {
 
 /* Décision isolée du DOM pour être vérifiable : ni iPhone ni Android ne sont
    atteignables depuis un banc headless, alors qu'une table de vérité l'est. */
-export function situation(arPossible, local, quickLook) {
+export function situation(arPossible, local, sceneViewer) {
   if (!arPossible) return "ordinateur";
   // Un blob sur Android : le bouton s'ouvrirait sur une application incapable
   // de lire le fichier. Mieux vaut ne pas le proposer que le voir échouer.
-  if (local && !quickLook) return "android";
+  if (local && sceneViewer) return "android";
   return "pret";
 }
 globalThis.__situation = situation;   // point d'entrée du banc
+globalThis.__sceneViewer = SCENE_VIEWER;
 
 /** Montre le bouton, ou dit pourquoi il n'y sera pas. */
 function annoncer() {
   const note = document.getElementById("depuis");
-  const cas = situation(vue.canActivateAR, !!urlLocale, QUICK_LOOK);
+  const cas = situation(vue.canActivateAR, !!urlLocale, SCENE_VIEWER);
   const possible = cas === "pret";
 
   document.getElementById("ar").hidden = !possible;

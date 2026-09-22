@@ -68,11 +68,20 @@ l'intention, et une URL `blob:` n'existe que dans l'onglet qui l'a créée. **To
 propre `.glb` et ton tableau ne peuvent donc pas être posés sur Android.** Les
 objets du rayon, servis par des URL publiques, fonctionnent.
 
-La page ne laisse pas ce cas échouer en silence : quand la réalité augmentée est
-disponible mais que le modèle vient de l'appareil et que Quick Look est absent,
-le bouton est remplacé par l'explication. La règle est une fonction pure,
-`situation()`, parce qu'aucun banc headless ne peut se faire passer pour un
-iPhone ou un Android, alors qu'une table de vérité se vérifie très bien.
+La page ne laisse pas ce cas échouer en silence : quand la réalité augmentée
+est disponible mais que le modèle vient de l'appareil et que la route passe par
+Scene Viewer, le bouton est remplacé par l'explication. La règle est une
+fonction pure, `situation()`, parce qu'aucun banc headless ne peut se faire
+passer pour un iPhone ou un Android, alors qu'une table de vérité se vérifie
+très bien.
+
+Le test porte sur **Android**, pas sur l'absence de Quick Look. La première
+version cherchait `relList.supports("ar")`, ce qui paraissait équivalent et ne
+l'est pas : sur iPhone, dans Chrome, Edge, Firefox, l'application Google ou
+DuckDuckGo, ce test répond non alors que Quick Look fonctionne. model-viewer y
+reconnaît ces navigateurs à leur user-agent. Le bouton disparaissait donc sur
+un fichier ouvert depuis l'appareil, sur un téléphone parfaitement capable de
+le poser. Le banc usurpe désormais cinq user-agents réels.
 
 ## Limites, honnêtement
 
@@ -94,7 +103,7 @@ node vignettes.mjs           # régénère les vignettes du rayon
 URL_PAGE=https://carentre.vercel.app/ node verifier.mjs
 ```
 
-`verifier.mjs` charge la page dans un Chrome headless et vérifie dix-huit
+`verifier.mjs` charge la page dans un Chrome headless et vérifie dix-neuf
 points : le chargement, le rayon et ses vignettes, la mesure des modèles, le
 calcul d'échelle, la bascule sol/mur, la règle qui décide du bouton AR sur les
 trois plateformes, et surtout que le GLB fabriqué à la main est accepté par
